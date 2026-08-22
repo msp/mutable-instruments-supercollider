@@ -115,7 +115,7 @@
 		// $SAMPLE2
 		~sampleFactory.(
 			// $PRESET_SAMPLE_SCALARS_START
-			(atk: 0.18, bankName: 'msp-summer2026', cloudsSend: 0.14, decay: 0.13, delaySend: 0.0, distAmount: 0.05, distDrive: 0.06, dur: 2.0, legato: 0.7, mul: 1.0, mute: 0.0, panDur: 0.06, phaseOffset: 0.75, rate: 3.95, rateMod: 0.0, revDamp: 0.8, revDrywet: 0.25, revFreeze: 0.0, revHp: 0.47, revTime: 0.64, reverbSend: 0.29, speed: 0.25, startPos: 0.1, tempo: 140.0, variant: 0.0, volume: 1.34, volumeMod: 0.0),
+			(atk: 0.18, bankName: 'msp-summer2026', cloudsSend: 0.0, decay: 0.13, delaySend: 0.0, distAmount: 0.05, distDrive: 0.06, dur: 2.0, legato: 0.7, mul: 1.0, mute: 0.0, panDur: 0.06, phaseOffset: 0.75, rate: 3.95, rateMod: 0.0, revDamp: 0.8, revDrywet: 0.25, revFreeze: 0.0, revHp: 0.47, revTime: 0.64, reverbSend: 0.29, speed: 0.25, startPos: 0.1, tempo: 140.0, variant: 0.0, volume: 1.34, volumeMod: 0.0),
 			// $PRESET_SAMPLE_SCALARS_END
 			// $PRESET_SAMPLE_SEQUENCES_START
 			(

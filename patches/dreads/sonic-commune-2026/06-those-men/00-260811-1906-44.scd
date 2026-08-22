@@ -39,7 +39,7 @@
 		// $PLAITS2
 		~plaitsFactory.(
 			// $PRESET_SCALARS_START
-			(amDepth: 0.0, amFixedHz: 0.0, amRatio: 1.0, amRing: 0.0, amWave: 0.0, cloudsSend: 0.0, decay: 0.65, decayMod: 0.0, delaySend: 0.0, distAmount: 0.0, distDrive: 0.0, droneMode: 0.0, dur: 0.25, engine: 19.0, fmMod: -0.02, harm: 0.63, harmMod: 0.0, legato: 15.0, lpgColour: 0.5, morph: 0.13, morphMod: 0.68, mul: 0.5, mute: 0.0, phaseOffset: -0.25, pitch: 42.0, pitchMod: 0.0, releaseTime: 1.0, revDamp: 0.04, revDrywet: 0.25, revFreeze: 0.0, revHp: 0.47, revTime: 0.84, reverbSend: 0.49, sendToPhones: 0.0, speed: 1.0, stereoMode: 1.0, tempo: 140.0, timbMod: 0.6, timbre: 0.3, volume: 0.51, volumeMod: 0.5),
+			(amDepth: 0.0, amFixedHz: 0.0, amRatio: 1.0, amRing: 0.0, amWave: 0.0, cloudsSend: 0.0, decay: 0.65, decayMod: 0.0, delaySend: 0.0, distAmount: 0.0, distDrive: 0.0, droneMode: 0.0, dur: Rest(0.25), engine: 19.0, fmMod: -0.02, harm: 0.63, harmMod: 0.0, legato: 15.0, lpgColour: 0.5, morph: 0.13, morphMod: 0.68, mul: 0.5, mute: 0.0, phaseOffset: -0.25, pitch: 42.0, pitchMod: 0.0, releaseTime: 1.0, revDamp: 0.04, revDrywet: 0.25, revFreeze: 0.0, revHp: 0.47, revTime: 0.84, reverbSend: 0.49, sendToPhones: 0.0, speed: 1.0, stereoMode: 1.0, tempo: 140.0, timbMod: 0.6, timbre: 0.3, volume: 0.51, volumeMod: 0.5),
 			// $PRESET_SCALARS_END
 			// $PRESET_SEQUENCES_START
 			(
@@ -115,7 +115,7 @@
 		// $SAMPLE2
 		~sampleFactory.(
 			// $PRESET_SAMPLE_SCALARS_START
-			(atk: 0.0, bankName: 'CLAPS', cloudsSend: 0.05, decay: 0.08, delaySend: 0.0, distAmount: 0.11, distDrive: 0.0, dur: 2.0, legato: 0.7, mul: 1.0, mute: 1.0, panDur: 0.06, phaseOffset: 0.75, rate: 1.0, rateMod: 0.0, revDamp: 0.8, revDrywet: 0.27, revFreeze: 0.0, revHp: 0.3, revTime: 0.95, reverbSend: 0.0, speed: 0.25, startPos: 0.0, tempo: 140.0, variant: 2.0, volume: 0.79, volumeMod: 0.0),
+			(atk: 0.0, bankName: 'CLAPS', cloudsSend: 0.0, decay: 0.08, delaySend: 0.0, distAmount: 0.11, distDrive: 0.0, dur: Rest(2.0), legato: 0.7, mul: 1.0, mute: 1.0, panDur: 0.06, phaseOffset: 0.75, rate: 1.0, rateMod: 0.0, revDamp: 0.8, revDrywet: 0.27, revFreeze: 0.0, revHp: 0.3, revTime: 0.95, reverbSend: 0.0, speed: 0.25, startPos: 0.0, tempo: 140.0, variant: 2.0, volume: 0.79, volumeMod: 0.0),
 			// $PRESET_SAMPLE_SCALARS_END
 			// $PRESET_SAMPLE_SEQUENCES_START
 			(
