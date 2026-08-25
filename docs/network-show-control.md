@@ -7,7 +7,7 @@
 ## Start sequence
 
 1. **Power the Shadow.** USB from the laptop. Give it ~30s.
-2. **Mac → Wi-Fi `msp`.** Nothing else. Not the venue's network.
+2. **Mac → `netmode show`.** Pins the IP and joins `msp`. Not the venue's network.
 3. **iPad → Wi-Fi `msp`.**
 4. **Boot SuperCollider.** Server up, synths loaded.
 5. **Start Open Stage Control:**
@@ -80,9 +80,23 @@ If you get a route but no name resolution, the Mac's DNS entry hasn't applied �
 
 The Mac's Wi-Fi is **pinned to a static IP**. It will join any other Wi-Fi network and appear connected while nothing actually works — no internet, no DNS, captive portals dead.
 
-Both directions: **System Settings → Network → Wi-Fi → Details → TCP/IP → Configure IPv4**
+### Switching
 
-**Normal Wi-Fi elsewhere** → set to *Using DHCP*.
+```
+netmode show      # pin to 192.168.8.10, DNS 192.168.8.1, join msp
+netmode normal    # back to DHCP for any other Wi-Fi
+netmode           # show current mode / ssid / ip / dns
+```
+
+Run `netmode` on its own if you're ever unsure which state you're in.
+
+Lives at `scripts/netmode.sh` in this repo, symlinked to `/usr/local/bin/netmode`. SSID, IP, gateway and DNS are variables at the top of the file — edit there if the router config ever changes.
+
+### By hand, if the script isn't available
+
+**System Settings → Network → Wi-Fi → Details → TCP/IP → Configure IPv4**
+
+**Normal Wi-Fi elsewhere** → set to *Using DHCP*, and clear the DNS tab.
 
 **Back to show mode** → set to *Manually*, then:
 
