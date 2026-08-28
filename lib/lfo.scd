@@ -204,18 +204,23 @@ if (~lfo.notNil) {
 	3.do { |i|
 		var inst = ~dreads.synths[i];
 		var offset = 3 + (i * 6);
-		bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/timbre", msg[offset]     * (inst.timbMod ? 0)]);
-		bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/morph",  msg[offset + 1] * (inst.morphMod ? 0)]);
-		bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/decay",  msg[offset + 2] * (inst.decayMod ? 0)]);
-		bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/pitch",  msg[offset + 3] * (inst.pitchMod ? 0)]);
-		bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/volume", msg[offset + 4] * (inst.volumeMod ? 0)]);
-		bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/harm",   msg[offset + 5] * (inst.harmMod ? 0)]);
+		if ((inst.mute ? 0) != 1) {   // muted -> skip: visual freezes at last value, no jump
+			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/timbre", msg[offset]     * (inst.timbMod ? 0)]);
+			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/morph",  msg[offset + 1] * (inst.morphMod ? 0)]);
+			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/decay",  msg[offset + 2] * (inst.decayMod ? 0)]);
+			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/pitch",  msg[offset + 3] * (inst.pitchMod ? 0)]);
+			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/volume", msg[offset + 4] * (inst.volumeMod ? 0)]);
+			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/harm",   msg[offset + 5] * (inst.harmMod ? 0)]);
+		};
 	};
 	3.do { |i|
 		var samp = ~dreads.samples[i];
 		var offset = 21 + (i * 2);
-		bundle = bundle.add(["/samples/" ++ i ++ "/lfo/rate",   msg[offset]     * (samp.rateMod ? 0)]);
-		bundle = bundle.add(["/samples/" ++ i ++ "/lfo/volume", msg[offset + 1] * (samp.volumeMod ? 0)]);
+		if ((samp.mute ? 0) != 1) {
+			bundle = bundle.add(["/samples/" ++ i ++ "/lfo/rate",   msg[offset]     * (samp.rateMod ? 0)]);
+			bundle = bundle.add(["/samples/" ++ i ++ "/lfo/volume", msg[offset + 1] * (samp.volumeMod ? 0)]);
+		};
 	};
-	~vis.().sendBundle(nil, *bundle);
+	// don't fire an empty bundle if every voice is muted
+	if (bundle.size > 0) { ~vis.().sendBundle(nil, *bundle) };
 }, '/lfoValues');
