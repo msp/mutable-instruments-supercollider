@@ -266,6 +266,7 @@
 
 // Global LFO base frequency (Hz). Sources in "×base" mode multiply this value.
 ~base = 0.125;
+~modGlide = 0.15;   // LFO-depth slew time (s) — smooths depth changes in audio + visuals
 
 // Module counts (must match the UI, the LFO maps below, and the \lfoReporter synthdef)
 ~numPlaits = 3;

@@ -99,23 +99,23 @@ SynthDef(\plaits, {
 	var sig, env, carrierFreq, amRingEff, amDepthEff, amRatioEff;
 
 	sig = MiPlaits.ar(
-		pitch: (pitch + (pitchLFO * pitchMod)).clip(0, 127),
+		pitch: (pitch + (pitchLFO * Lag.kr(pitchMod, ~modGlide))).clip(0, 127),
 		engine: engine.clip(0, 23),
-		harm: (harm + (harmLFO * harmMod)).clip(0, 1),
-		timbre: (timbre + (timbreLFO * timbMod)).clip(0, 1),
-		morph: (morph + (morphLFO * morphMod)).clip(0, 1),
+		harm: (harm + (harmLFO * Lag.kr(harmMod, ~modGlide))).clip(0, 1),
+		timbre: (timbre + (timbreLFO * Lag.kr(timbMod, ~modGlide))).clip(0, 1),
+		morph: (morph + (morphLFO * Lag.kr(morphMod, ~modGlide))).clip(0, 1),
 		trigger: gate,
-		decay: (decay + (decayLFO * decayMod)).clip(0, 1),
+		decay: (decay + (decayLFO * Lag.kr(decayMod, ~modGlide))).clip(0, 1),
 		fm_mod: fmMod.clip(-1, 1),
 		lpg_colour: lpgColour.clip(0, 1),
 		mul: mul
 	);
 
 	// AM / ring-mod stage (modulator tracks the modulated carrier pitch)
-	carrierFreq = (pitch + (pitchLFO * pitchMod)).clip(0, 127).midicps;
-	amRingEff  = (amRing  + (amRingLFO  * amRingMod )).clip(0, 1);   // LFO-modulated AM/RM balance
-	amDepthEff = (amDepth + (amDepthLFO * amDepthMod)).clip(0, 1);   // LFO-modulated AM amount
-	amRatioEff = (amRatio + (amRatioLFO * amRatioMod)).clip(0, 8);   // LFO-modulated modulator ratio
+	carrierFreq = (pitch + (pitchLFO * Lag.kr(pitchMod, ~modGlide))).clip(0, 127).midicps;
+	amRingEff  = (amRing  + (amRingLFO  * Lag.kr(amRingMod, ~modGlide) )).clip(0, 1);   // LFO-modulated AM/RM balance
+	amDepthEff = (amDepth + (amDepthLFO * Lag.kr(amDepthMod, ~modGlide))).clip(0, 1);   // LFO-modulated AM amount
+	amRatioEff = (amRatio + (amRatioLFO * Lag.kr(amRatioMod, ~modGlide))).clip(0, 8);   // LFO-modulated modulator ratio
 	sig = ~plaitsAMStage.(sig, carrierFreq, amRatioEff, amWave, amDepthEff, amRingEff, amFixedHz);
 
 	// releaseTime = note release/tail (was hardcoded 1.0). Attack/sustain kept as Linen
@@ -124,7 +124,7 @@ SynthDef(\plaits, {
 
 	~plaitsSigChain.(sig, env, out, stereoMode, distDrive, distAmount,
 		revTime, revDrywet, revDamp, revHp, revFreeze,
-		(volume + (volumeLFO * volumeMod)).clip(0, 2),
+		(volume + (volumeLFO * Lag.kr(volumeMod, ~modGlide))).clip(0, 2),
 		cloudsSend, delaySend, reverbSend);
 }).add;
 
@@ -138,30 +138,30 @@ SynthDef(\plaitsDrone, {
 	var sig, env, carrierFreq, amRingEff, amDepthEff, amRatioEff;
 
 	sig = MiPlaits.ar(
-		pitch: (pitch + (pitchLFO * pitchMod)).clip(0, 127),
+		pitch: (pitch + (pitchLFO * Lag.kr(pitchMod, ~modGlide))).clip(0, 127),
 		engine: engine.clip(0, 23),
-		harm: (harm + (harmLFO * harmMod)).clip(0, 1),
-		timbre: (timbre + (timbreLFO * timbMod)).clip(0, 1),
-		morph: (morph + (morphLFO * morphMod)).clip(0, 1),
+		harm: (harm + (harmLFO * Lag.kr(harmMod, ~modGlide))).clip(0, 1),
+		timbre: (timbre + (timbreLFO * Lag.kr(timbMod, ~modGlide))).clip(0, 1),
+		morph: (morph + (morphLFO * Lag.kr(morphMod, ~modGlide))).clip(0, 1),
 		trigger: 1,
-		decay: (decay + (decayLFO * decayMod)).clip(0, 1),
+		decay: (decay + (decayLFO * Lag.kr(decayMod, ~modGlide))).clip(0, 1),
 		fm_mod: fmMod.clip(-1, 1),
 		lpg_colour: lpgColour.clip(0, 1),
 		mul: mul
 	);
 
 	// AM / ring-mod stage (modulator tracks the modulated carrier pitch)
-	carrierFreq = (pitch + (pitchLFO * pitchMod)).clip(0, 127).midicps;
-	amRingEff  = (amRing  + (amRingLFO  * amRingMod )).clip(0, 1);   // LFO-modulated AM/RM balance
-	amDepthEff = (amDepth + (amDepthLFO * amDepthMod)).clip(0, 1);   // LFO-modulated AM amount
-	amRatioEff = (amRatio + (amRatioLFO * amRatioMod)).clip(0, 8);   // LFO-modulated modulator ratio
+	carrierFreq = (pitch + (pitchLFO * Lag.kr(pitchMod, ~modGlide))).clip(0, 127).midicps;
+	amRingEff  = (amRing  + (amRingLFO  * Lag.kr(amRingMod, ~modGlide) )).clip(0, 1);   // LFO-modulated AM/RM balance
+	amDepthEff = (amDepth + (amDepthLFO * Lag.kr(amDepthMod, ~modGlide))).clip(0, 1);   // LFO-modulated AM amount
+	amRatioEff = (amRatio + (amRatioLFO * Lag.kr(amRatioMod, ~modGlide))).clip(0, 8);   // LFO-modulated modulator ratio
 	sig = ~plaitsAMStage.(sig, carrierFreq, amRatioEff, amWave, amDepthEff, amRingEff, amFixedHz);
 
 	env = EnvGen.kr(Env.asr(5, 1, 5), gate, doneAction: Done.freeSelf);
 
 	~plaitsSigChain.(sig, env, out, stereoMode, distDrive, distAmount,
 		revTime, revDrywet, revDamp, revHp, revFreeze,
-		(volume + (volumeLFO * volumeMod)).clip(0, 2),
+		(volume + (volumeLFO * Lag.kr(volumeMod, ~modGlide))).clip(0, 2),
 		cloudsSend, delaySend, reverbSend);
 }).add;
 
@@ -346,8 +346,8 @@ SynthDef(\panningSamplePlayer, {
 	volumeLFO=0, volumeMod=0.0|
 
 	var sig, env, pan, monoPlay, cleanSig, distSig;
-	var finalRate = rate + (rateLFO * rateMod);
-	var finalVolume = (volume + (volumeLFO * volumeMod)).clip(0, 2);
+	var finalRate = rate + (rateLFO * Lag.kr(rateMod, ~modGlide));
+	var finalVolume = (volume + (volumeLFO * Lag.kr(volumeMod, ~modGlide))).clip(0, 2);
 
 	// Pan from -1 to 1 over panDur
 	pan = Line.kr(-1, 1, panDur);

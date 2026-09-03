@@ -207,34 +207,48 @@ if (~lfo.notNil) {
 };
 
 // Relay LFO values from server to VDMX via OSC, scaled by per-instance mod depth
+// Persistent one-pole state for the visual depth-slew (Dictionary: string keys need
+// value-equality, an Event/IdentityDictionary would never match "p"++i++param).
+~lfoSmooth = ~lfoSmooth ? Dictionary.new;
+
 ~lfo.reporterFunc = OSCFunc({ |msg|
-	var bundle = Array.new(24);
+	var bundle = Array.new(~numLFOSources);
+	// Slew each depth so introducing/adjusting LFO depth eases the visual in, instead
+	// of snapping to the free-running LFO's current phase. Mirrors the audio depth
+	// slew (synthdef Lag.kr(~modGlide)); ~modGlide is the shared glide time.
+	var a = exp(-1 / (60 * (~modGlide ? 0.15)));   // one-pole coeff for ~modGlide-second glide at 60Hz
+	var sm = { |key, target|
+		var cur = (~lfoSmooth[key] ? target);
+		cur = target + ((cur - target) * a);
+		~lfoSmooth[key] = cur;
+		cur
+	};
 	~numPlaits.do { |i|
 		var inst = ~dreads.synths[i];
 		var offset = 3 + (i * 6);
 		if ((inst.mute ? 0) != 1) {   // muted -> skip: visual freezes at last value, no jump
-			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/timbre", msg[offset]     * (inst.timbMod ? 0)]);
-			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/morph",  msg[offset + 1] * (inst.morphMod ? 0)]);
-			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/decay",  msg[offset + 2] * (inst.decayMod ? 0)]);
-			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/pitch",  msg[offset + 3] * (inst.pitchMod ? 0)]);
-			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/volume", msg[offset + 4] * (inst.volumeMod ? 0)]);
-			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/harm",   msg[offset + 5] * (inst.harmMod ? 0)]);
+			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/timbre", msg[offset]     * sm.("p"++i++"timb",   inst.timbMod ? 0)]);
+			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/morph",  msg[offset + 1] * sm.("p"++i++"morph",  inst.morphMod ? 0)]);
+			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/decay",  msg[offset + 2] * sm.("p"++i++"decay",  inst.decayMod ? 0)]);
+			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/pitch",  msg[offset + 3] * sm.("p"++i++"pitch",  inst.pitchMod ? 0)]);
+			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/volume", msg[offset + 4] * sm.("p"++i++"volume", inst.volumeMod ? 0)]);
+			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/harm",   msg[offset + 5] * sm.("p"++i++"harm",   inst.harmMod ? 0)]);
 		};
 	};
 	~numSamples.do { |i|
 		var samp = ~dreads.samples[i];
 		var offset = 21 + (i * 2);
 		if ((samp.mute ? 0) != 1) {
-			bundle = bundle.add(["/samples/" ++ i ++ "/lfo/rate",   msg[offset]     * (samp.rateMod ? 0)]);
-			bundle = bundle.add(["/samples/" ++ i ++ "/lfo/volume", msg[offset + 1] * (samp.volumeMod ? 0)]);
+			bundle = bundle.add(["/samples/" ++ i ++ "/lfo/rate",   msg[offset]     * sm.("s"++i++"rate",   samp.rateMod ? 0)]);
+			bundle = bundle.add(["/samples/" ++ i ++ "/lfo/volume", msg[offset + 1] * sm.("s"++i++"volume", samp.volumeMod ? 0)]);
 		};
 	};
 	~numPlaits.do { |i|
 		var inst = ~dreads.synths[i];
 		if ((inst.mute ? 0) != 1) {
-			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/amRing", msg[27 + i] * (inst.amRingMod ? 0)]);
-			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/amDepth", msg[30 + i] * (inst.amDepthMod ? 0)]);
-			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/amRatio", msg[33 + i] * (inst.amRatioMod ? 0)]);
+			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/amRing",  msg[27 + i] * sm.("p"++i++"amRing",  inst.amRingMod ? 0)]);
+			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/amDepth", msg[30 + i] * sm.("p"++i++"amDepth", inst.amDepthMod ? 0)]);
+			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/amRatio", msg[33 + i] * sm.("p"++i++"amRatio", inst.amRatioMod ? 0)]);
 		};
 	};
 	// don't fire an empty bundle if every voice is muted
