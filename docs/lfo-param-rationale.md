@@ -116,9 +116,11 @@ because routing is missing.
   couples params; the 1:1 default is what keeps each param independent and the UI coherent.
 
 - **The renumber pain's real cause:** the source *pool* is sized exactly to the 1:1 map
-  (`~defaultLFOSources = (1..24)`, one per param×instance), and the **reporter uses hardcoded
-  offsets** into that numbering. So every new param grows and renumbers the pool (the pain
-  we hit adding `harm`). Routing can't dodge it — sharing a source onto a new param gives it
+  (pool size now *derives* as `~numLFOSources = ~numPlaits*~plaitsLFOParams.size + ~numSamples*~sampleLFOParams.size`),
+  and the **reporter uses hardcoded offsets** into that numbering. New params grow the pool; to
+  avoid *renumbering* (which would break existing patches) the AM params were **appended**
+  (`amRing/amDepth/amRatio` = `lfo25-33`), so the numbering is non-contiguous — the map, the
+  reporter wiring, and `shuffle_modules.py` (now map-driven) are the spots that must know it. Routing can't dodge it — sharing a source onto a new param gives it
   *coupled* modulation (stamping); independent modulation still needs its own source.
 
 - **The pragmatic fix (first slice of the N-source idea):** *stop sizing the pool to the

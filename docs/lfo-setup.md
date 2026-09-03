@@ -145,7 +145,7 @@ one-liner: `lfoSend(sub, value)`. Full detail in `docs/osc-shared-modals.md`.
 ### Tab visibility
 
 The **lfo tab's `visible`** is **module-aware**: it branches on `@{seqModal/context}.type` —
-samples see `['rate','volume']`, plaits see `['timbre','morph','decay','pitch','volume','harm']`
+samples see `['rate','volume']`, plaits see `['timbre','morph','decay','pitch','volume','harm','amRing','amDepth','amRatio']`
 (these must stay in sync with `~plaitsLFOParams`/`~sampleLFOParams`). It hides itself for
 non-LFO params and for sample `decay`. `openSeqModal` also forces the seq tab active
 (`set('seqModalPanel', 0)`) so you're never stranded on a hidden tab.
@@ -153,5 +153,8 @@ non-LFO params and for sample `decay`. `openSeqModal` also forces the seq tab ac
 ## Status
 
 All shipped: base-frequency mode + OSC wiring (`1b6acc0`, `e51bcfe`), the UI tab +
-client-side cache + `lfoSend`/`lfoPopulate`, `harm` in the LFO set (24 sources), module-aware
+client-side cache + `lfoSend`/`lfoPopulate`, `harm` in the LFO set, module-aware
 tab visibility (`8876587`), and dedicated-mod-knob sync via id-twin caches (`1a235f2`).
+AM params (`amRing`/`amDepth`/`amRatio`) added as LFO targets; source pool now derives
+as `~numLFOSources` (currently 33), AM sources appended at `lfo25-33`, `harmLFO` wired
+for sequenced notes, and patch-serialisation + shuffle-script made map-driven.

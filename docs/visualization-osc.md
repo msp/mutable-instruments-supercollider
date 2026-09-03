@@ -61,8 +61,8 @@ These values are **Tier 1 outputs** — the sequencer's Pfunc result, after `~mo
 ### From the LFO reporter (`lib/synthdefs.scd`, server-side, 60 Hz)
 
 - `\lfoReporter` SynthDef fires `SendReply.kr(Impulse.kr(60), '/lfoValues', [...])`
-- `~lfo.reporterFunc` (`lib/lfo.scd`) relays 24 buses to VDMX paths:
-  - `/plaits/<i>/lfo/<param>` for `timbre, morph, decay, pitch, volume, harm` (6 params × 3 instances = 18)
+- `~lfo.reporterFunc` (`lib/lfo.scd`) relays all LFO source buses to VDMX paths (mute-gated):
+  - `/plaits/<i>/lfo/<param>` for `timbre, morph, decay, pitch, volume, harm, amRing, amDepth, amRatio` (9 params × 3 = 27)
   - `/samples/<i>/lfo/<param>` for `rate, volume` (2 × 3 = 6)
   - Each value = `bus_value * modDepth`, range **−0.5 .. +0.5** (signed)
 
