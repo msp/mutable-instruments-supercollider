@@ -718,7 +718,7 @@
 // Start a persistent drone synth for a plaits instance
 ~startDrone = { |i|
 	var instance = ~dreads.synths[i];
-	var out;
+	var out, args, droneControls;
 
 	// Stop existing drone if any
 	if (~drones.notNil && ~drones[i].notNil) {
@@ -728,41 +728,19 @@
 
 	out = ~voiceOutBus.(\plaits, i);
 
-	~drones[i] = Synth(\plaitsDrone, [
-		\out, out,
-		\pitch, instance.pitch,
-		\engine, instance.engine,
-		\harm, instance.harm,
-		\timbre, instance.timbre,
-		\morph, instance.morph,
-		\decay, instance.decay,
-		\fmMod, instance.fmMod,
-		\lpgColour, instance.lpgColour,
-		\mul, if (instance.mute == 1) { 0 } { instance.mul },
-		\revDrywet, instance.revDrywet,
-		\revTime, instance.revTime,
-		\revDamp, instance.revDamp,
-		\revHp, instance.revHp,
-		\revFreeze, instance.revFreeze,
-		\volume, instance.volume,
-		\cloudsSend, instance.cloudsSend,
-		\delaySend, instance.delaySend,
-		\reverbSend, instance.reverbSend,
-		\distDrive, instance.distDrive,
-		\distAmount, instance.distAmount,
-		\stereoMode, instance.stereoMode,
-		\timbMod, instance.timbMod,
-		\morphMod, instance.morphMod,
-		\decayMod, instance.decayMod,
-		\pitchMod, instance.pitchMod,
-		\volumeMod, instance.volumeMod,
-		\harmMod, instance.harmMod,
-		\amRatio, instance.amRatio,
-		\amWave, instance.amWave,
-		\amDepth, instance.amDepth,
-		\amRing, instance.amRing,
-		\amFixedHz, instance.amFixedHz,
-	], ~voiceGroup, \addToHead);
+	// Build the arg list from the instance scalars that are actual \plaitsDrone
+	// controls — no hand-maintained duplicate list, so new params flow automatically
+	// (this duplication kept biting us; see CLAUDE.md "derive, don't hardcode"). mul is
+	// derived from mute; *LFO controls are mapped from buses below (no scalar); and
+	// non-control scalars (tempo/dur/legato/mute/releaseTime/…) are excluded by the filter.
+	droneControls = SynthDescLib.global.at(\plaitsDrone).controls.collect { |c| c.name };
+	args = [\out, out, \mul, if (instance.mute == 1) { 0 } { instance.mul }];
+	instance.keys.do { |key|
+		if (droneControls.includes(key) and: { ~synthArgSpecials.includes(key).not }) {
+			args = args ++ [key, instance[key]];
+		};
+	};
+	~drones[i] = Synth(\plaitsDrone, args, ~voiceGroup, \addToHead);
 
 	// Map LFO buses to drone control args — instance.lfo is already hydrated
 	~plaitsLFOParams.do { |param|

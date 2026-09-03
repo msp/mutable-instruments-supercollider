@@ -278,6 +278,12 @@
 // Per-source LFO controls (mod is separate — a synth scalar, not a source param)
 ~lfoSourceParams = [\freq, \shape, \width, \base];
 
+// Synth controls set SPECIALLY when building a synth's args from an instance's
+// scalars, so they are excluded from the generic scalar->arg pass: mul is derived
+// from mute, out is the routing bus, gate is left at its synthdef default. Named
+// here for reuse by scalar->synth builders (currently ~startDrone).
+~synthArgSpecials = [\mul, \out, \gate];
+
 // One LFO source synth per (module x modulatable param), pooled as lfo1..N.
 // N derives from the counts above, so adding a param grows the pool automatically.
 // (The LFO maps + the \lfoReporter synthdef still assign/read specific numbers,
