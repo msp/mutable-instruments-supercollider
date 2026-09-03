@@ -64,26 +64,33 @@ These values are **Tier 1 outputs** — the sequencer's Pfunc result, after `~mo
 - `~lfo.reporterFunc` (`lib/lfo.scd`) relays all LFO source buses to VDMX paths (mute-gated):
   - `/plaits/<i>/lfo/<param>` for `timbre, morph, decay, pitch, volume, harm, amRing, amDepth, amRatio` (9 params × 3 = 27)
   - `/samples/<i>/lfo/<param>` for `rate, volume` (2 × 3 = 6)
-  - Each value = `bus_value * modDepth`, range **−0.5 .. +0.5** (signed)
+  - Each value = `(bus_value * modDepth) + 0.5`, range **0.0 .. 1.0, with 0.5 = rest** (the `emit` helper in `~lfo.reporterFunc` is the one place this encoding lives)
 
-These values are the **LFO contribution alone** (not added to the scalar) — they represent Tier 2 modulation.
+These values are the **LFO contribution alone** (the wobble; *not* added to the scalar base) — they represent Tier 2 modulation. `0.5` = LFO at rest, `<0.5` pushing down, `>0.5` pushing up; the span narrows toward 0.5 as depth drops and never clips.
 
-### Consuming the bipolar LFO stream in VDMX
+### Wire convention: offset, encoded 0–1 rest-0.5 (decided 2026-09)
 
-VDMX standard slider receivers **will not accept a negative `MIN`** — the field silently snaps back to 0. Feeding `/plaits/<i>/lfo/<param>` directly into an FX slider therefore clips the negative half of the LFO to the slider's floor. Visible symptom: the value "hangs" at the minimum for roughly half each cycle.
+> **What we send is the modulation *offset*, not the absolute parameter value.** It says
+> "how far the LFO is pushing this instant", not "where timbre actually is". Encoded 0–1
+> with 0.5 = rest (i.e. the bipolar offset `±0.5×depth` shifted by `+0.5`), on **one**
+> address per param — no second `lfoU`-style address, no signed values on the wire.
 
-Two ways to bridge the mismatch:
+**Why 0–1 rest-0.5, not signed −0.5..+0.5** (the older convention, now retired):
+- **VDMX is natively 0–1.** Standard slider receivers won't accept a negative `MIN` (the field snaps to 0), so a signed wire needed a per-slider remap or a Control Surface adapter on *every* mapping — the manual tax. 0–1 rest-0.5 drops straight in, no slider config.
+- **A shader recovers the signed offset trivially** with `input - 0.5` (see the migrated display shaders below), so nothing is lost. Bipolar is the more "honest" representation of an offset, but the consumer here is VDMX/visuals, where 0–1 rules.
 
-1. **Per-receiver "Do Math?" expression** — VDMX slider receivers support a math expression using `$VAL`, `$MIN`, `$MAX` (DDMathParser syntax). Example to remap −0.5..+0.5 into the slider's envelope: `$VAL + 0.5` with "Scale val to fit in envelope" enabled. Downside: needs remembering per mapping, spreads the translation across the project.
+**Offset vs absolute value — why we send the offset.** Absolute (`base + offset`, e.g. the
+real current timbre) would let a visual track knob turns and sequenced steps too, not just
+the LFO wobble. We deliberately *don't* send it from the reporter, because:
+- the reporter (`\lfoReporter`) only reads the **LFO buses** — it has the offset but not the base;
+- the base changes per note for sequenced voices and would need capturing + a per-param range map + clip;
+- **you already send the base** on `/plaits/<i>/<param>` (the Tier-1 stream), so any shader that wants absolute can just add the two channels itself. A server-side sum is an optional future convenience (see `TODO.md`).
 
-2. **Control Surface adapter (recommended)** — a one-time-setup pattern. Build a Control Surface plugin containing one **custom fader per LFO channel** (24 total). Each fader:
-   - has `MIN: -0.5, MAX: 0.5` — custom faders *do* accept a negative min
-   - has **Publish Normalised** enabled — republishes the fader position as `0.0..1.0` under the fader's name
-   - receives its OSC path directly (e.g. fader "plaits0_volume" listens on `/plaits/0/lfo/volume`)
+**Two shader families, one convention.** Shaders split by how they use the value:
+- **Modulation displays** (`scope`, `scope_v2`, `pulses`, `pulses_v2`, `phasewheel`, `interference`, `wow`) visualise the *wobble* — they were built with `−0.5..0.5` inputs. **Migrated 2026-09** to `0–1 / DEFAULT 0.5` inputs, each recovering the signed offset internally with `x = input - 0.5` at the point it's first read (testMode branches already synthesised `0.5*sin(…)`, so both paths stay in the same bipolar domain and all downstream maths is unchanged). Geometry inputs like `centreOffset*` stay signed — they're coordinates, not modulation.
+- **Value / parameter drivers** (`chromointerference`, `amrm`, `amrm_v2`) feed the value into a `0–1` input directly. Already `0–1 / DEFAULT 0.5`, so **no change** — the new wire is native to them.
 
-   Downstream FX subscribe to the Publish Normalised value from the adapter fader, not the raw OSC. Range translation lives in one place, the fader labels are self-documenting, and the fader UI (or the Comm Display plugin) gives a live debug view of every LFO channel. Save the Control Surface as a plugin preset for reuse across projects.
-
-The bipolar range is deliberate on Dreads' side — shaders that add the LFO to a base value (`finalTimbre = timbre + LFO * mod`) need a signed input, matching the server-side SynthDef maths. The adapter pattern lets both audiences — shaders that want bipolar, VDMX FX that want unipolar — get what they need without changing the Dreads OSC taxonomy.
+Net: every shader now reads `/…/lfo/<param>` as a plain 0–1 input. No negative slider mins, no per-mapping remap, no `lfoU` ambiguity, and new shaders just declare a `0–1` input and subscribe.
 
 ## Known gaps and discussion
 

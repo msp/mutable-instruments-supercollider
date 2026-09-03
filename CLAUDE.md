@@ -1,5 +1,12 @@
 # MiPlaits Modulation Investigation
 
+## Backlog
+
+**Check `TODO.md`** (gitignored, local) — the single backlog: open work, known bugs,
+parked architecture visions, and recurring watch-outs. Consult it at the start of a task
+to see if it's already tracked, and add/update items there rather than starting a parallel
+list. Design detail lives in `docs/`; longer-horizon visions in memory (`project_*`).
+
 ## Conventions
 
 - **Use UK (British) spelling everywhere** — identifiers, OSC addresses, comments, docs,

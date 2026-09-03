@@ -206,7 +206,15 @@ if (~lfo.notNil) {
 	// Trade-off: a *livecoded* ~lfoTweak won't auto-refresh an already-open modal.
 };
 
-// Relay LFO values from server to VDMX via OSC, scaled by per-instance mod depth
+// Relay LFO values from server to VDMX via OSC, scaled by per-instance mod depth.
+//
+// WIRE CONVENTION (see docs/visualization-osc.md): each /…/lfo/<param> carries the LFO's
+// modulation *offset* (the wobble, base NOT included), encoded 0–1 with 0.5 = rest.
+// i.e. bipolar offset (±0.5×depth) + 0.5. Chosen so it matches VDMX's native 0–1 range —
+// no negative slider mins, no per-slider remap. A shader that wants the signed offset back
+// does `input - 0.5`; a shader that wants the absolute value adds the base it already
+// receives on /…/<param> (the Tier-1 stream). Keep every param on this one convention.
+//
 // Persistent one-pole state for the visual depth-slew (Dictionary: string keys need
 // value-equality, an Event/IdentityDictionary would never match "p"++i++param).
 ~lfoSmooth = ~lfoSmooth ? Dictionary.new;
@@ -223,32 +231,35 @@ if (~lfo.notNil) {
 		~lfoSmooth[key] = cur;
 		cur
 	};
+	// The one place the wire encoding lives: bipolar offset (signal × slewed depth),
+	// shifted to 0–1 rest-0.5. All sends below go through this so the +0.5 isn't scattered.
+	var emit = { |signal, depthKey, depth| (signal * sm.(depthKey, depth)) + 0.5 };
 	~numPlaits.do { |i|
 		var inst = ~dreads.synths[i];
 		var offset = 3 + (i * 6);
 		if ((inst.mute ? 0) != 1) {   // muted -> skip: visual freezes at last value, no jump
-			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/timbre", msg[offset]     * sm.("p"++i++"timb",   inst.timbMod ? 0)]);
-			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/morph",  msg[offset + 1] * sm.("p"++i++"morph",  inst.morphMod ? 0)]);
-			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/decay",  msg[offset + 2] * sm.("p"++i++"decay",  inst.decayMod ? 0)]);
-			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/pitch",  msg[offset + 3] * sm.("p"++i++"pitch",  inst.pitchMod ? 0)]);
-			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/volume", msg[offset + 4] * sm.("p"++i++"volume", inst.volumeMod ? 0)]);
-			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/harm",   msg[offset + 5] * sm.("p"++i++"harm",   inst.harmMod ? 0)]);
+			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/timbre", emit.(msg[offset], "p"++i++"timb",   inst.timbMod ? 0)]);
+			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/morph",  emit.(msg[offset + 1], "p"++i++"morph",  inst.morphMod ? 0)]);
+			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/decay",  emit.(msg[offset + 2], "p"++i++"decay",  inst.decayMod ? 0)]);
+			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/pitch",  emit.(msg[offset + 3], "p"++i++"pitch",  inst.pitchMod ? 0)]);
+			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/volume", emit.(msg[offset + 4], "p"++i++"volume", inst.volumeMod ? 0)]);
+			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/harm",   emit.(msg[offset + 5], "p"++i++"harm",   inst.harmMod ? 0)]);
 		};
 	};
 	~numSamples.do { |i|
 		var samp = ~dreads.samples[i];
 		var offset = 21 + (i * 2);
 		if ((samp.mute ? 0) != 1) {
-			bundle = bundle.add(["/samples/" ++ i ++ "/lfo/rate",   msg[offset]     * sm.("s"++i++"rate",   samp.rateMod ? 0)]);
-			bundle = bundle.add(["/samples/" ++ i ++ "/lfo/volume", msg[offset + 1] * sm.("s"++i++"volume", samp.volumeMod ? 0)]);
+			bundle = bundle.add(["/samples/" ++ i ++ "/lfo/rate",   emit.(msg[offset], "s"++i++"rate",   samp.rateMod ? 0)]);
+			bundle = bundle.add(["/samples/" ++ i ++ "/lfo/volume", emit.(msg[offset + 1], "s"++i++"volume", samp.volumeMod ? 0)]);
 		};
 	};
 	~numPlaits.do { |i|
 		var inst = ~dreads.synths[i];
 		if ((inst.mute ? 0) != 1) {
-			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/amRing",  msg[27 + i] * sm.("p"++i++"amRing",  inst.amRingMod ? 0)]);
-			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/amDepth", msg[30 + i] * sm.("p"++i++"amDepth", inst.amDepthMod ? 0)]);
-			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/amRatio", msg[33 + i] * sm.("p"++i++"amRatio", inst.amRatioMod ? 0)]);
+			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/amRing",  emit.(msg[27 + i], "p"++i++"amRing",  inst.amRingMod ? 0)]);
+			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/amDepth", emit.(msg[30 + i], "p"++i++"amDepth", inst.amDepthMod ? 0)]);
+			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/amRatio", emit.(msg[33 + i], "p"++i++"amRatio", inst.amRatioMod ? 0)]);
 		};
 	};
 	// don't fire an empty bundle if every voice is muted
