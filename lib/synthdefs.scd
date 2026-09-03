@@ -94,9 +94,9 @@ SynthDef(\plaits, {
 	arg out=0, pitch=40, engine=1, harm=0.5, timbre=0.5, morph=0.5, speed=6, level=1.0, decay=0.5, fmMod=0.0, lpgColour=0.5, mul=0.5, gate=1.0, revDrywet=0.25, revTime=0.3, revDamp=0.8, revHp=0.7, revFreeze=0, volume=0.7, cloudsSend=0.0, delaySend=0.0, reverbSend=0.0, distDrive=0.0, distAmount=0.0, stereoMode=1,
 	timbreLFO=0, morphLFO=0, decayLFO=0, pitchLFO=0, volumeLFO=0, harmLFO=0,
 	timbMod=0.0, morphMod=0.0, decayMod=0.0, pitchMod=0.0, volumeMod=0.0, harmMod=0.0,
-	amRatio=1.0, amWave=0, amDepth=0.0, amRing=0.0, amFixedHz=0, releaseTime=1.0;
+	amRatio=1.0, amWave=0, amDepth=0.0, amRing=0.0, amFixedHz=0, releaseTime=1.0, amRingLFO=0, amRingMod=0, amDepthLFO=0, amDepthMod=0, amRatioLFO=0, amRatioMod=0;
 
-	var sig, env, carrierFreq;
+	var sig, env, carrierFreq, amRingEff, amDepthEff, amRatioEff;
 
 	sig = MiPlaits.ar(
 		pitch: (pitch + (pitchLFO * pitchMod)).clip(0, 127),
@@ -113,7 +113,10 @@ SynthDef(\plaits, {
 
 	// AM / ring-mod stage (modulator tracks the modulated carrier pitch)
 	carrierFreq = (pitch + (pitchLFO * pitchMod)).clip(0, 127).midicps;
-	sig = ~plaitsAMStage.(sig, carrierFreq, amRatio, amWave, amDepth, amRing, amFixedHz);
+	amRingEff  = (amRing  + (amRingLFO  * amRingMod )).clip(0, 1);   // LFO-modulated AM/RM balance
+	amDepthEff = (amDepth + (amDepthLFO * amDepthMod)).clip(0, 1);   // LFO-modulated AM amount
+	amRatioEff = (amRatio + (amRatioLFO * amRatioMod)).clip(0, 8);   // LFO-modulated modulator ratio
+	sig = ~plaitsAMStage.(sig, carrierFreq, amRatioEff, amWave, amDepthEff, amRingEff, amFixedHz);
 
 	// releaseTime = note release/tail (was hardcoded 1.0). Attack/sustain kept as Linen
 	// defaults (0.01 / 1.0). Frees the synth when the release completes.
@@ -130,9 +133,9 @@ SynthDef(\plaitsDrone, {
 	arg out=0, pitch=40, engine=1, harm=0.5, timbre=0.5, morph=0.5, speed=6, level=1.0, decay=0.5, fmMod=0.0, lpgColour=0.5, mul=0.5, gate=1.0, revDrywet=0.25, revTime=0.3, revDamp=0.8, revHp=0.7, revFreeze=0, volume=0.7, cloudsSend=0.0, delaySend=0.0, reverbSend=0.0, distDrive=0.0, distAmount=0.0, stereoMode=1,
 	timbreLFO=0, morphLFO=0, decayLFO=0, pitchLFO=0, volumeLFO=0, harmLFO=0,
 	timbMod=0.0, morphMod=0.0, decayMod=0.0, pitchMod=0.0, volumeMod=0.0, harmMod=0.0,
-	amRatio=1.0, amWave=0, amDepth=0.0, amRing=0.0, amFixedHz=0;
+	amRatio=1.0, amWave=0, amDepth=0.0, amRing=0.0, amFixedHz=0, amRingLFO=0, amRingMod=0, amDepthLFO=0, amDepthMod=0, amRatioLFO=0, amRatioMod=0;
 
-	var sig, env, carrierFreq;
+	var sig, env, carrierFreq, amRingEff, amDepthEff, amRatioEff;
 
 	sig = MiPlaits.ar(
 		pitch: (pitch + (pitchLFO * pitchMod)).clip(0, 127),
@@ -149,7 +152,10 @@ SynthDef(\plaitsDrone, {
 
 	// AM / ring-mod stage (modulator tracks the modulated carrier pitch)
 	carrierFreq = (pitch + (pitchLFO * pitchMod)).clip(0, 127).midicps;
-	sig = ~plaitsAMStage.(sig, carrierFreq, amRatio, amWave, amDepth, amRing, amFixedHz);
+	amRingEff  = (amRing  + (amRingLFO  * amRingMod )).clip(0, 1);   // LFO-modulated AM/RM balance
+	amDepthEff = (amDepth + (amDepthLFO * amDepthMod)).clip(0, 1);   // LFO-modulated AM amount
+	amRatioEff = (amRatio + (amRatioLFO * amRatioMod)).clip(0, 8);   // LFO-modulated modulator ratio
+	sig = ~plaitsAMStage.(sig, carrierFreq, amRatioEff, amWave, amDepthEff, amRingEff, amFixedHz);
 
 	env = EnvGen.kr(Env.asr(5, 1, 5), gate, doneAction: Done.freeSelf);
 
@@ -185,7 +191,10 @@ SynthDef(\lfoReporter, {
 	    timbreBus2=0, morphBus2=0, decayBus2=0, pitchBus2=0, volumeBus2=0, harmBus2=0,
 	    sRateBus0=0, sVolumeBus0=0,
 	    sRateBus1=0, sVolumeBus1=0,
-	    sRateBus2=0, sVolumeBus2=0;
+	    sRateBus2=0, sVolumeBus2=0,
+	    amRingBus0=0, amRingBus1=0, amRingBus2=0,
+	    amDepthBus0=0, amDepthBus1=0, amDepthBus2=0,
+	    amRatioBus0=0, amRatioBus1=0, amRatioBus2=0;
 	SendReply.kr(
 		Impulse.kr(60),
 		'/lfoValues',
@@ -195,7 +204,10 @@ SynthDef(\lfoReporter, {
 			In.kr(timbreBus2, 1), In.kr(morphBus2, 1), In.kr(decayBus2, 1), In.kr(pitchBus2, 1), In.kr(volumeBus2, 1), In.kr(harmBus2, 1),
 			In.kr(sRateBus0, 1), In.kr(sVolumeBus0, 1),
 			In.kr(sRateBus1, 1), In.kr(sVolumeBus1, 1),
-			In.kr(sRateBus2, 1), In.kr(sVolumeBus2, 1)
+			In.kr(sRateBus2, 1), In.kr(sVolumeBus2, 1),
+			In.kr(amRingBus0, 1), In.kr(amRingBus1, 1), In.kr(amRingBus2, 1),
+			In.kr(amDepthBus0, 1), In.kr(amDepthBus1, 1), In.kr(amDepthBus2, 1),
+			In.kr(amRatioBus0, 1), In.kr(amRatioBus1, 1), In.kr(amRatioBus2, 1)
 		]
 	);
 }).add;

@@ -99,6 +99,9 @@
 	amDepth: 0.0,      // AM/ring-mod amount (0 = bypass)
 	amFixedHz: 0,      // 0 = modulator tracks carrier ratio, 1 = fixed Hz (inharmonic)
 	amRing: 0.0,       // AM<->RM morph (0 = AM/carrier present, 1 = ring mod/carrier suppressed)
+	amRingMod: 0.0,    // LFO depth for amRing (AM/RM balance)
+	amDepthMod: 0.0,   // LFO depth for amDepth (AM amount)
+	amRatioMod: 0.0,   // LFO depth for amRatio (modulator ratio)
 	amRatio: 1.0,      // modulator freq as a ratio of the carrier pitch
 	amWave: 0,         // modulator waveform: 0 sine, 1 tri, 2 saw, 3 square
 	cloudsSend: 1.0,
@@ -261,33 +264,37 @@
 	variant: Pseq([0], inf).asStream,  // integer index, not a modulation param
 );
 
-// Default LFO source configs (24 sources: 18 plaits + 6 samples)
-// Source numbering follows reporter order:
-//   lfo1-6: plaits 0 (timbre, morph, decay, pitch, volume, harm)
-//   lfo7-12: plaits 1
-//   lfo13-18: plaits 2
-//   lfo19-20: samples 0 (rate, volume)
-//   lfo21-22: samples 1
-//   lfo23-24: samples 2
 // Global LFO base frequency (Hz). Sources in "×base" mode multiply this value.
 ~base = 0.125;
 
-~defaultLFOSources = ();
-(1..24).do { |n|
-	~defaultLFOSources[("lfo" ++ n).asSymbol] = (freq: 0.125, shape: 0, width: 0.3, base: false);
-};
+// Module counts (must match the UI, the LFO maps below, and the \lfoReporter synthdef)
+~numPlaits = 3;
+~numSamples = 3;
 
-// Per-instance LFO-modulatable params (order matches the reporter + LFO maps)
-~plaitsLFOParams = [\timbre, \morph, \decay, \pitch, \volume, \harm];
+// Per-instance LFO-modulatable params (order matches the LFO maps below)
+~plaitsLFOParams = [\timbre, \morph, \decay, \pitch, \volume, \harm, \amRing, \amDepth, \amRatio];
 ~sampleLFOParams = [\rate, \volume];
 // Per-source LFO controls (mod is separate — a synth scalar, not a source param)
 ~lfoSourceParams = [\freq, \shape, \width, \base];
 
-// Default 1:1 LFO mappings per plaits instance
+// One LFO source synth per (module x modulatable param), pooled as lfo1..N.
+// N derives from the counts above, so adding a param grows the pool automatically.
+// (The LFO maps + the \lfoReporter synthdef still assign/read specific numbers,
+//  so extend those to match when you add a param.)
+~numLFOSources = (~numPlaits * ~plaitsLFOParams.size) + (~numSamples * ~sampleLFOParams.size);
+~defaultLFOSources = ();
+(1..~numLFOSources).do { |n|
+	~defaultLFOSources[("lfo" ++ n).asSymbol] = (freq: 0.125, shape: 0, width: 0.3, base: false);
+};
+
+// Default 1:1 LFO mappings per plaits instance (param -> LFO source).
+// SOURCE OF TRUTH for which lfo index drives which (voice, param).
+// The \lfoReporter bus wiring in lib/lfo.scd (~lfo.reporter Synth) must pass the
+// SAME lfoN to each bus, and scripts/shuffle_modules.py parses this map — keep in sync.
 ~defaultPlaitsLFOMap = [
-	(timbre: \lfo1, morph: \lfo2, decay: \lfo3, pitch: \lfo4, volume: \lfo5, harm: \lfo6),
-	(timbre: \lfo7, morph: \lfo8, decay: \lfo9, pitch: \lfo10, volume: \lfo11, harm: \lfo12),
-	(timbre: \lfo13, morph: \lfo14, decay: \lfo15, pitch: \lfo16, volume: \lfo17, harm: \lfo18),
+	(timbre: \lfo1, morph: \lfo2, decay: \lfo3, pitch: \lfo4, volume: \lfo5, harm: \lfo6, amRing: \lfo25, amDepth: \lfo28, amRatio: \lfo31),
+	(timbre: \lfo7, morph: \lfo8, decay: \lfo9, pitch: \lfo10, volume: \lfo11, harm: \lfo12, amRing: \lfo26, amDepth: \lfo29, amRatio: \lfo32),
+	(timbre: \lfo13, morph: \lfo14, decay: \lfo15, pitch: \lfo16, volume: \lfo17, harm: \lfo18, amRing: \lfo27, amDepth: \lfo30, amRatio: \lfo33),
 ];
 
 // Default 1:1 LFO mappings per sample instance

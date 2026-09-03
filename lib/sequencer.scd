@@ -147,11 +147,19 @@ x = Pdef(\plaitsSequence,
 				\decayLFO, Pfunc { ~dreads.synths[i].lfo.decay.bus.asMap },
 				\pitchLFO, Pfunc { ~dreads.synths[i].lfo.pitch.bus.asMap },
 				\volumeLFO, Pfunc { ~dreads.synths[i].lfo.volume.bus.asMap },
+				\harmLFO, Pfunc { ~dreads.synths[i].lfo.harm.bus.asMap },
+				\amRingLFO, Pfunc { ~dreads.synths[i].lfo.amRing.bus.asMap },
+				\amDepthLFO, Pfunc { ~dreads.synths[i].lfo.amDepth.bus.asMap },
+				\amRatioLFO, Pfunc { ~dreads.synths[i].lfo.amRatio.bus.asMap },
 				\timbMod, Pfunc { ~dreads.synths[i].timbMod },
 				\morphMod, Pfunc { ~dreads.synths[i].morphMod },
 				\decayMod, Pfunc { ~dreads.synths[i].decayMod },
 				\pitchMod, Pfunc { ~dreads.synths[i].pitchMod },
 				\volumeMod, Pfunc { ~dreads.synths[i].volumeMod },
+				\harmMod, Pfunc { ~dreads.synths[i].harmMod },
+				\amRingMod, Pfunc { ~dreads.synths[i].amRingMod },
+				\amDepthMod, Pfunc { ~dreads.synths[i].amDepthMod },
+				\amRatioMod, Pfunc { ~dreads.synths[i].amRatioMod },
 				\pitch, Pfunc { |event|
 					// ["--->", ~state, ~dreads.synths[i].engine, ~playCount].postln;
 					if (i == 0) {
@@ -305,7 +313,14 @@ x = Pdef(\plaitsSequence,
 					~modulateBipolar.(seqVal, inst.distAmount)
 				},
 				\stereoMode, Pfunc { |event| ~dreads.synths[i].stereoMode },
-				\volume, Pfunc { |event| ~modulateBipolar.(~getSequenceValue.(~dreads.synths[i], i, \plaits, \volume), ~dreads.synths[i].volume); },
+				\volume, Pfunc { |event|
+					var inst, seqVal;
+					inst = ~dreads.synths[i];
+					seqVal = ~getSequenceValue.(inst, i, \plaits, \volume);
+					inst.seqCache ?? { inst.seqCache = () };
+					inst.seqCache[\volume] = seqVal;      // cached for the vis live-drag echo
+					~modulateBipolar.(seqVal, inst.volume)
+				},
 				\out, Pfunc { ~voiceOutBus.(\plaits, i) },
 			))
 			])

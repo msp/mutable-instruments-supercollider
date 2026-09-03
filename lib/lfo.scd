@@ -31,8 +31,12 @@ if (~lfo.notNil) {
 	);
 };
 
-// Reporter relays all bus values to sclang for VDMX forwarding
-// Bus args follow reporter order: plaits 0-2 (timbre,morph,decay,pitch,volume,harm), samples 0-2 (rate,volume)
+// Reporter relays all bus values to sclang for VDMX forwarding.
+// The lfoN indices below MUST match ~defaultPlaitsLFOMap / ~defaultSampleLFOMap in
+// globals.scd, and the SendReply order in the \lfoReporter synthdef defines the msg
+// offsets read in ~lfo.reporterFunc — keep all three in sync when adding a param.
+// Bus args follow reporter order: plaits 0-2 classic (timbre,morph,decay,pitch,volume,harm) = lfo1-18,
+// samples 0-2 (rate,volume) = lfo19-24, then AM per voice (amRing,amDepth,amRatio) appended = lfo25-33.
 ~lfo.reporter = Synth(\lfoReporter, [
 	\timbreBus0, ~lfo.sources[\lfo1].bus, \morphBus0, ~lfo.sources[\lfo2].bus,
 	\decayBus0, ~lfo.sources[\lfo3].bus, \pitchBus0, ~lfo.sources[\lfo4].bus, \volumeBus0, ~lfo.sources[\lfo5].bus, \harmBus0, ~lfo.sources[\lfo6].bus,
@@ -43,6 +47,9 @@ if (~lfo.notNil) {
 	\sRateBus0, ~lfo.sources[\lfo19].bus, \sVolumeBus0, ~lfo.sources[\lfo20].bus,
 	\sRateBus1, ~lfo.sources[\lfo21].bus, \sVolumeBus1, ~lfo.sources[\lfo22].bus,
 	\sRateBus2, ~lfo.sources[\lfo23].bus, \sVolumeBus2, ~lfo.sources[\lfo24].bus,
+	\amRingBus0, ~lfo.sources[\lfo25].bus, \amRingBus1, ~lfo.sources[\lfo26].bus, \amRingBus2, ~lfo.sources[\lfo27].bus,
+	\amDepthBus0, ~lfo.sources[\lfo28].bus, \amDepthBus1, ~lfo.sources[\lfo29].bus, \amDepthBus2, ~lfo.sources[\lfo30].bus,
+	\amRatioBus0, ~lfo.sources[\lfo31].bus, \amRatioBus1, ~lfo.sources[\lfo32].bus, \amRatioBus2, ~lfo.sources[\lfo33].bus,
 ], ~lfoGroup);
 
 // Resolve a source's authored freq to Hz (× ~base when base-locked)
@@ -129,7 +136,8 @@ if (~lfo.notNil) {
 			~drones[i].set(
 				\timbMod, inst[\timbMod], \morphMod, inst[\morphMod],
 				\decayMod, inst[\decayMod], \pitchMod, inst[\pitchMod],
-				\volumeMod, inst[\volumeMod], \harmMod, inst[\harmMod]
+				\volumeMod, inst[\volumeMod], \harmMod, inst[\harmMod],
+				\amRingMod, inst[\amRingMod], \amDepthMod, inst[\amDepthMod], \amRatioMod, inst[\amRatioMod]
 			);
 		};
 	};
@@ -201,7 +209,7 @@ if (~lfo.notNil) {
 // Relay LFO values from server to VDMX via OSC, scaled by per-instance mod depth
 ~lfo.reporterFunc = OSCFunc({ |msg|
 	var bundle = Array.new(24);
-	3.do { |i|
+	~numPlaits.do { |i|
 		var inst = ~dreads.synths[i];
 		var offset = 3 + (i * 6);
 		if ((inst.mute ? 0) != 1) {   // muted -> skip: visual freezes at last value, no jump
@@ -213,12 +221,20 @@ if (~lfo.notNil) {
 			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/harm",   msg[offset + 5] * (inst.harmMod ? 0)]);
 		};
 	};
-	3.do { |i|
+	~numSamples.do { |i|
 		var samp = ~dreads.samples[i];
 		var offset = 21 + (i * 2);
 		if ((samp.mute ? 0) != 1) {
 			bundle = bundle.add(["/samples/" ++ i ++ "/lfo/rate",   msg[offset]     * (samp.rateMod ? 0)]);
 			bundle = bundle.add(["/samples/" ++ i ++ "/lfo/volume", msg[offset + 1] * (samp.volumeMod ? 0)]);
+		};
+	};
+	~numPlaits.do { |i|
+		var inst = ~dreads.synths[i];
+		if ((inst.mute ? 0) != 1) {
+			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/amRing", msg[27 + i] * (inst.amRingMod ? 0)]);
+			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/amDepth", msg[30 + i] * (inst.amDepthMod ? 0)]);
+			bundle = bundle.add(["/plaits/" ++ i ++ "/lfo/amRatio", msg[33 + i] * (inst.amRatioMod ? 0)]);
 		};
 	};
 	// don't fire an empty bundle if every voice is muted

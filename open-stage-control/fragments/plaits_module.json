@@ -559,7 +559,7 @@
         "height": 80.36363636363636,
         "expand": false,
         "css": "",
-        "file": "fragments/small_knob.json",
+        "file": "fragments/small_knob_lfo.json",
         "fallback": "",
         "props": {
          "variables": {
@@ -586,7 +586,7 @@
         "height": 80.36363636363636,
         "expand": false,
         "css": "",
-        "file": "fragments/small_knob.json",
+        "file": "fragments/small_knob_lfo.json",
         "fallback": "",
         "props": {
          "variables": {
@@ -612,7 +612,7 @@
         "height": 80.36363636363636,
         "expand": false,
         "css": "",
-        "file": "fragments/small_knob.json",
+        "file": "fragments/small_knob_lfo.json",
         "fallback": "",
         "props": {
          "variables": {

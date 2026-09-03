@@ -728,8 +728,9 @@
 						sourceUsages[srcName] = sourceUsages[srcName].add("sample " ++ i ++ " " ++ param);
 					};
 				};
-				// Sort numerically by lfo number
-				(1..21).do { |n|
+				// Serialise every source config that differs from default, by lfo number.
+				// Range derives from ~numLFOSources so new params are covered automatically.
+				(1..~numLFOSources).do { |n|
 					var key = ("lfo" ++ n).asSymbol;
 					var src = ~lfo.sources[key];
 					var defaults = ~defaultLFOSources[key];

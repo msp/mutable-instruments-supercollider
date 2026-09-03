@@ -5,9 +5,11 @@ module's LFO settings with it.
 
 A patch has three plaits slots (0,1,2). Each slot's scalars + sequences live in
 its $PLAITS block; its LFO source freq/shape values live in $LFO_SOURCES, keyed
-by number: slot 0 -> lfo1-6, slot 1 -> lfo7-12, slot 2 -> lfo13-18 (params in
-order timbre, morph, decay, pitch, volume, harm). Sample LFOs (lfo19+) and the
-sample blocks are untouched.
+by lfo number. Which lfo index maps to which (slot, param) is read from
+~defaultPlaitsLFOMap / ~defaultSampleLFOMap in lib/globals.scd (the single source
+of truth), so any layout -- including the non-contiguous AM sources (lfo25+) -- is
+handled without positional assumptions. Sample sources and sample blocks are
+left untouched.
 
 This moves each slot's scalars, sequences AND lfo values to a new slot together,
 so a reorder in the UI/patch stays sonically identical, just re-slotted.
@@ -27,10 +29,7 @@ Examples:
 Writes in place. Prints a summary; re-run is safe (idempotent only if perm is
 identity — otherwise each run applies the permutation again, so run once).
 """
-import re, sys
-
-PARAMS = ["timbre", "morph", "decay", "pitch", "volume", "harm"]  # per-slot lfo order
-
+import os, re, sys
 
 def rotate_blocks(txt, marker, perm):
     """Rotate the payloads between START/END markers (3 expected) per perm."""
@@ -45,46 +44,62 @@ def rotate_blocks(txt, marker, perm):
     return pat.sub(lambda m: m.group(1) + next(it) + m.group(3), txt)
 
 
-def remap_lfo(txt, perm):
-    """Rewrite $LFO_SOURCES, moving each plaits slot's lfo entries to its new slot."""
+def load_lfo_maps(globals_path):
+    """Parse ~defaultPlaitsLFOMap / ~defaultSampleLFOMap from globals.scd — the single
+    source of truth for which lfo index drives which (slot, param). Returns
+    (plaits, samples): each a list (per slot) of {param: lfo_number}."""
+    txt = open(globals_path).read()
+    def parse(name):
+        m = re.search(r'~%s\s*=\s*\[(.*?)\];' % name, txt, re.S)
+        if not m:
+            raise SystemExit("could not find ~%s in %s" % (name, globals_path))
+        slots = []
+        for entry in re.findall(r'\(([^)]*)\)', m.group(1)):
+            slots.append({p: int(n) for p, n in re.findall(r'(\w+):\s*\\lfo(\d+)', entry)})
+        return slots
+    return parse('defaultPlaitsLFOMap'), parse('defaultSampleLFOMap')
+
+
+def remap_lfo(txt, perm, plaits_map, sample_map):
+    """Rewrite $LFO_SOURCES, moving each plaits slot's lfo configs to its new slot.
+    Driven from plaits_map (parsed from globals.scd), so any index layout — including
+    non-contiguous AM sources (lfo25+) — is handled without positional assumptions."""
     m = re.search(r'~dreads\.lfoSources = \((.*?)\n\);', txt, re.S)
     if not m:
         raise SystemExit("no ~dreads.lfoSources block found")
-    body = m.group(1)
-
-    # parse entries: lfoN: (freq: X[, shape: Y]),   -> keep the (...) verbatim
-    entries = {}  # N -> "(freq: ...)"
-    for em in re.finditer(r'lfo(\d+):\s*(\([^)]*\))', body):
+    entries = {}
+    for em in re.finditer(r'lfo(\d+):\s*(\([^)]*\))', m.group(1)):
         entries[int(em.group(1))] = em.group(2)
 
-    # new_slot = position where perm maps to a given old_slot
-    old_to_new = {perm[i]: i for i in range(3)}
+    plaits_src = {n: (s, p) for s, d in enumerate(plaits_map) for p, n in d.items()}
+    sample_src = {n: (s, p) for s, d in enumerate(sample_map) for p, n in d.items()}
+    old_to_new = {perm[i]: i for i in range(len(plaits_map))}  # old_slot -> new_slot
 
-    out = {}   # new N -> value
-    samples = {}
+    out = {}       # new plaits source number -> value
+    others = {}    # samples / unknown, unchanged
     for n, val in entries.items():
-        if n <= 18:                       # a plaits source
-            old_slot, p = (n - 1) // 6, (n - 1) % 6
-            new_n = old_to_new[old_slot] * 6 + p + 1
-            out[new_n] = val
+        if n in plaits_src:
+            old_slot, param = plaits_src[n]
+            out[plaits_map[old_to_new[old_slot]][param]] = val
         else:
-            samples[n] = val              # sample source, unchanged
+            others[n] = val
 
     lines = ["~dreads.lfoSources = ("]
-    for slot in range(3):
+    for slot in range(len(plaits_map)):
         lines.append("\t// plaits %d" % slot)
-        for p in range(6):
-            n = slot * 6 + p + 1
+        for param, n in sorted(plaits_map[slot].items(), key=lambda kv: kv[1]):
             if n in out:
-                lines.append("\tlfo%d: %s, // plaits %d %s" % (n, out[n], slot, PARAMS[p]))
-    lines.append("\t// samples (unchanged)")
-    for n in sorted(samples):
-        idx = (n - 19) // 2
-        kind = "rate" if (n - 19) % 2 == 0 else "volume"
-        lines.append("\tlfo%d: %s, // sample %d %s" % (n, samples[n], idx, kind))
+                lines.append("\tlfo%d: %s, // plaits %d %s" % (n, out[n], slot, param))
+    if others:
+        lines.append("\t// samples / other (unchanged)")
+        for n in sorted(others):
+            if n in sample_src:
+                s, p = sample_src[n]
+                lines.append("\tlfo%d: %s, // sample %d %s" % (n, others[n], s, p))
+            else:
+                lines.append("\tlfo%d: %s," % (n, others[n]))
     lines.append(")")
-    new_block = "\n".join(lines)
-    return txt[:m.start()] + new_block + txt[m.end() - 1:]  # keep trailing ;
+    return txt[:m.start()] + "\n".join(lines) + txt[m.end() - 1:]  # keep trailing ;
 
 
 def check_balanced(txt):
@@ -113,7 +128,9 @@ def main():
     txt = open(path).read()
     txt = rotate_blocks(txt, "SCALARS", perm)
     txt = rotate_blocks(txt, "SEQUENCES", perm)
-    txt = remap_lfo(txt, perm)
+    globals_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "lib", "globals.scd")
+    plaits_map, sample_map = load_lfo_maps(globals_path)
+    txt = remap_lfo(txt, perm, plaits_map, sample_map)
 
     if not check_balanced(txt):
         raise SystemExit("ABORT: result is not bracket-balanced; not writing")
